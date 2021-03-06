@@ -1,0 +1,732 @@
+Anonymous Programs in PLSQL
+	DECLARE		--optional
+	BEGIN
+	EXCEPTION	--optional
+	END;
+
+named block
+	PROCEDURE
+	FUNCTION
+	TRIGGER
+	
+--------Programming constructs------
+	
+IF	ELSIF	ELSE		AND NESTED IF
+CASE	WHEN THEN ELSE
+	EXPRESSION
+	STATEMENT	
+LOOPS
+	BASIC			LOOP 	END LOOP
+	WHILE
+	FOR
+
+		EXIT, CONTINUE
+
+
+Basic loop:
+----------
+declare
+    EID INT;
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+begin
+    EID:=100;
+    LOOP
+        SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME);
+        EID:=EID+1;
+        EXIT WHEN EID>206;
+    END LOOP;
+    dbms_output.put_line('Hello world');
+end;
+
+---------------------------------------------------------
+While Loop:
+------------
+declare
+    EID INT;
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+begin
+    EID:=100;
+    WHILE EID<=206
+    LOOP
+        SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME);
+        EID:=EID+1;
+        --EXIT WHEN EID>206;
+    END LOOP;
+    dbms_output.put_line('Hello world');
+end;
+-----------------------------------------------------------
+For Loop
+---------
+declare
+    EID INT;
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+begin
+    EID:=100;
+--    WHILE EID<=206
+    FOR EID IN 100..206
+    LOOP
+        SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME);
+--        EID:=EID+1;
+        --EXIT WHEN EID>206;
+    END LOOP;
+    dbms_output.put_line('Hello ASIA');
+end;
+-----------------------------------------------------
+REVERSE FOR LOOP
+-----------------
+declare
+    EID INT;
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+begin
+    FOR EID IN REVERSE 100..206
+    LOOP
+        SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        DBMS_OUTPUT.PUT_LINE(EID||' '||FNAME);
+    END LOOP;
+    dbms_output.put_line('Hello ASIA');
+end;
+-------------------------------------------------------
+Nested Loop and Label
+-----------
+DECLARE
+    I INT;
+    J INT;
+BEGIN
+    <<OUTER1>>
+    FOR I IN 1..10  
+    LOOP
+        <<INNER1>>
+        FOR J IN 1..2
+        LOOP
+            DBMS_OUTPUT.PUT_LINE('I='|| I || ' AND J=' || J);
+            IF I=3 THEN
+                GOTO LABEL1;
+            END IF;
+        END LOOP INNER1;
+    END LOOP OUTER1;
+    <<LABEL1>>
+        DBMS_OUTPUT.PUT_LINE('LAST LINE LABEL1');
+END;
+-----------------------
+GOTO
+-----
+DECLARE
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+    EID INT:=99;
+BEGIN
+    <<JAG>>
+    EID:=EID+1;
+    SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+    IF FNAME='Kimberely' THEN
+        DBMS_OUTPUT.PUT_LINE('Found... at '||EID);
+    ELSE
+        GOTO JAG;
+    END IF;
+END;
+----------------------------------------------------------------------
+CONTINUE
+--------
+DECLARE
+    FNAME EMPLOYEES.FIRST_NAME%TYPE;
+    EID INT:=99;
+BEGIN
+    FOR EID IN 100..206
+    LOOP
+        SELECT FIRST_NAME INTO FNAME FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+        IF FNAME!='Kimberely' THEN
+            DBMS_OUTPUT.PUT_LINE('Not matching...');
+            CONTINUE;
+        ELSE            
+            EXIT;
+        END IF;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE(FNAME);
+END;
+--------------------------------------------------
+In for loop, the index variable NEED NOT BE DECLARED
+
+
+declare 
+    x int:=8;
+begin
+    for x in 1 .. 10
+    loop
+        dbms_output.put_line(x);
+    end loop;
+    dbms_output.put_line('after the for loop');
+    dbms_output.put_line(x);
+end;
+
+As per above program, the variable "x" declared in DECLARE block is different from the "x" used in for loop
+Both have different memory and values.
+
+
+---------------------------------------------------
+Task
+-----
+	Display all accounts present in the account's table
+	customer's firstname, acnumber, balance
+	Note: do it in plsql
+
+	Hint:	find the account numbers in the table
+
+SOLUTiON:
+---------
+DECLARE
+    CN INT;
+    ANO ACCOUNT.ACNUMBER%TYPE;
+    ANO1 ANO%TYPE;
+    ANO2 ANO%TYPE;
+    I INT;
+    J INT;
+    FN CUSTOMER.FNAME%TYPE;
+    CID ACCOUNT.CUSTID%TYPE;
+    AN ANO%TYPE;
+    OB INT;
+    D INT;
+    W INT;
+    BALANCE INT;
+BEGIN
+    SELECT MIN(ACNUMBER) INTO ANO1 FROM ACCOUNT;
+    SELECT MAX(ACNUMBER) INTO ANO2 FROM ACCOUNT;
+
+    SELECT TO_NUMBER(SUBSTR(ANO1,2)) INTO I FROM DUAL;
+    SELECT TO_NUMBER(SUBSTR(ANO2,2)) INTO J FROM DUAL;
+        
+    FOR X IN I .. J
+    LOOP
+        IF X<10 THEN        --SINGLE DIGIT NUMBER
+            ANO:='A0000'||X;
+        ELSE
+            ANO:='A000'||X;
+        END IF;
+--        DBMS_OUTPUT.PUT_LINE(ANO);       --got every account number
+        SELECT COUNT(*) INTO CN FROM TRANDETAILS WHERE ACNUMBER=ANO;
+        IF CN=0 THEN
+            CONTINUE;
+        END IF;
+            SELECT CUSTID, OPENING_BALANCE INTO CID, OB FROM ACCOUNT WHERE ACNUMBER=ANO;        
+            SELECT FNAME INTO FN FROM CUSTOMER WHERE CUSTID=CID;
+                
+            SELECT SUM(TRANSACTION_AMOUNT) INTO D FROM TRANDETAILS WHERE TRANSACTION_TYPE='Deposit'                
+                GROUP BY ACNUMBER HAVING ACNUMBER=ANO;            
+                
+            SELECT SUM(TRANSACTION_AMOUNT) INTO W FROM TRANDETAILS WHERE TRANSACTION_TYPE='Withdrawal'                
+                GROUP BY ACNUMBER HAVING ACNUMBER=ANO;            
+        BALANCE:=(OB+D)-W;
+            DBMS_OUTPUT.PUT_LINE(CID||' '||FN||' '||ANO||' '||D||' '||W||' '||BALANCE);
+            
+    END LOOP;
+END;
+
+----------------------------------------------------
+WE used
+	%TYPE
+	%ROWTYPE
+
+WE Can also create custom row type.
+
+ex:
+	find the first name and salary of employee whose id is 102
+
+
+DECLARE
+    TYPE JAG IS RECORD
+    (FN VARCHAR2(50),
+    SAL INT);
+    X JAG;             --CUSTOM ROW TYPE
+BEGIN
+    SELECT FIRST_NAME, SALARY INTO X FROM EMPLOYEES WHERE EMPLOYEE_ID=102;
+    DBMS_OUTPUT.PUT_LINE(X.FN|| ' '||X.SAL);
+END;
+
+
+Reminder:
+	input
+
+
+
+
+
+
+PLSQL - INPUTS
+--------------
+DECLARE
+	X INT;
+	FN EMPLOYEES.FIRST_NAME%TYPE;
+BEGIN
+	X:=&EID;
+	SELECT FIRST_NAME INTO FN FROM EMPLOYEES WHERE EMPLOYEE_ID=X;
+	DBMS_OUTPUT.PUT_LINE(FN);
+END;
+
+
+-----------------
+&  is used to get input only for that program
+
+&& is used to refer to global variables	(bind variables)
+	bind variables retain the values across multiple programs
+-----------------------------------
+	CURSORS
+---------------------------------------
+So far, we created PLSQL programs, where a select statement must return only 1 row. Neither 0 nor >1
+But sometimes, we need to exeucte queries that return 0 or more than 1 row.
+
+How?
+	it is possible, if we can store the result of a query in a work space and be able to fetch 1 row at a time
+THat is exactly what we do in CURSOR
+	So, a cursor represents a SELECT statement
+
+Cursor is never created as a database object like table, view, etc. It is only in memory, not in storage.
+
+steps:
+1) DEFINE Cursor	(is nothing but defining a name for the cursor along with a SELECT statement)
+2) OPEN Cursor		(the select query is executed)		cursor will be positioned before 1st row
+3) FETCH cursor row into a variable(s)
+4) CLOSE cursor		(this will de allocate the memory occupied when we opened the cursor)
+
+
+CURSOR ATTRIBUTES:
+	FOUND		returns true, if the previous fetch was successful (only after a fetch, FOUND/NOTFOUND can be used)
+	NOTFOUND	returns true, if the previous fetch statement did not find any row
+	ISOPEN		returns true, if CURSOR is open (but not closed)
+	ROWCOUNT	returns the number of rows found after opening the cursor
+
+
+DECLARE
+    CURSOR JAG_CUR IS 
+        SELECT * FROM EMPLOYEES;
+    X EMPLOYEES%ROWTYPE;
+BEGIN
+    OPEN JAG_CUR;
+    loop
+        FETCH JAG_CUR INTO X;       --Fetch only 1 row into X. what should be the type of X?
+        if JAG_CUR%NOTFOUND THEN
+            EXIT;
+        end if;
+        DBMS_OUTPUT.PUT_LINE(X.FIRST_NAME);
+    end loop;
+    CLOSE JAG_CUR;
+END;
+---------------------------------------------
+TasK:
+	use cursor to retrieve all employees records, loop and fetch each record. Check if salary >8000 and display only those records.
+
+	Note: 
+		use cursor
+		use if condition inside loop
+
+
+
+Every query works with an implicit cursor	(SQL is the name of implicit cursor)
+	SQL%FOUND
+	SQL%NOTFOUND
+	SQL%ROWCOUNT
+	
+
+
+----------CUR%ROWTYPE
+DECLARE
+    CURSOR CUR1 IS SELECT FNAME, LTNAME, CITY, DOB FROM CUSTOMER;
+    X CUR1%ROWTYPE;
+BEGIN
+    OPEN CUR1;
+    LOOP
+        FETCH CUR1 INTO X;
+        IF CUR1%NOTFOUND THEN
+            EXIT;
+        END IF;
+        
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE(CUR1%ROWCOUNT);
+    CLOSE CUR1;
+END;
+-----------------
+1) Introducing CURSOR FOR LOOP
+	special for loop only for cursor
+
+DECLARE
+    CURSOR CUR1 IS SELECT * FROM EMPLOYEES;
+BEGIN
+    FOR X IN CUR1
+    LOOP
+        DBMS_OUTPUT.PUT_LINE(X.FIRST_NAME);
+    END LOOP;
+END;
+------------------- SAME CODE----
+BEGIN
+    FOR X IN (SELECT * FROM EMPLOYEES)			--INLINE
+    LOOP
+        DBMS_OUTPUT.PUT_LINE(X.FIRST_NAME);
+    END LOOP;
+END;
+--------------------
+Task:
+	Find the balance amount of all accounts.
+	If they have never done any transaction, their opening balance is their balance.
+	Display FName, Acnumber, Deposits, Withdrawals, Balance
+
+
+DECLARE
+    DEP INT;
+    WIT INT;
+    BAL INT;
+BEGIN
+    FOR X IN (SELECT C.FNAME, A.ACNUMBER, A.OPENING_BALANCE FROM ACCOUNT A JOIN CUSTOMER C ON A.CUSTID=C.CUSTID)
+    LOOP
+        DEP:=0;
+        WIT:=0;
+        BAL:=X.OPENING_BALANCE;
+        FOR Y IN (SELECT * FROM TRANDETAILS WHERE ACNUMBER=X.ACNUMBER)
+        LOOP
+            --WE ARE LOOPING TRANDETAILS ROW ONE BY ONE HERE.....   Y IS A ROW. 
+            IF Y.TRANSACTION_TYPE='Deposit' THEN
+                DEP:=DEP+Y.TRANSACTION_AMOUNT;
+            ELSE
+                WIT:=WIT+Y.TRANSACTION_AMOUNT;
+            END IF;            
+        END LOOP;
+        BAL:=BAL+(DEP-WIT);
+        DBMS_OUTPUT.PUT_LINE('First Name:'||X.FNAME);
+        DBMS_OUTPUT.PUT_LINE('A/c #:'||X.ACNUMBER);
+        DBMS_OUTPUT.PUT_LINE('Deposits:'||DEP);
+        DBMS_OUTPUT.PUT_LINE('Withdrawals:'||WIT);
+        DBMS_OUTPUT.PUT_LINE('Balance:'||BAL);
+        dbms_output.put_line('--------------------------------------------');
+    END LOOP;
+END;
+
+
+--select * from account;
+
+-------------------------------------------------------------
+Ref cursor			
+----------
+	Ref - Reference
+
+	a function can return a ref cursor.
+	why? we need to return a cursor?	
+		if a function returns a ref cursor, then the calling program can fetch the records.
+
+	a ref cursor can be 
+		strongly typed
+		weakly typed
+
+DECLARE
+    X SYS_REFCURSOR;            --No type declared for this ref cursor. This is weakly typed ref cursor
+    TYPE Y IS REF CURSOR RETURN INT;        --STRONGLY TYPE REF CURSOR
+
+
+-----------------------
+DECLARE
+    X SYS_REFCURSOR;            --No type declared for this ref cursor. This is weakly typed ref cursor
+    Y INT;
+BEGIN
+    OPEN X FOR SELECT SALARY FROM EMPLOYEES;
+    ----------------------------------------------
+    LOOP
+        FETCH X INTO Y;
+        EXIT WHEN X%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(Y);
+    END LOOP;
+    CLOSE X;
+END;
+
+
+----------------
+
+1) A Ref cursor is a refernce variable that can contain a cursor.
+2) a ref cursor is opened in the function where it is created.
+3) so we just fetch the records from the cursor
+
+
+DECLARE
+    X SYS_REFCURSOR;            --No type declared for this ref cursor. This is weakly typed ref cursor
+    Y EMPLOYEES%ROWTYPE;
+BEGIN
+    OPEN X FOR SELECT * FROM EMPLOYEES;
+    ----------------------------------------------
+    LOOP
+        FETCH X INTO Y;
+        EXIT WHEN X%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(Y.FIRST_NAME);
+    END LOOP;
+    CLOSE X;
+END;
+----------------===========================----------------------
+EXCEPTIONS:
+-----------
+DECLARE
+BEGIN
+EXCEPTION
+END
+
+
+
+DECLARE
+    X INT;
+BEGIN
+    SELECT SALARY INTO X FROM EMPLOYEES;
+EXCEPTION
+    WHEN TOO_MANY_ROWS THEN
+        DBMS_OUTPUT.PUT_LINE('YOU FORGOT WHERE CONDITON?');
+END;
+-------------------
+1) raise application error		--throw exception
+2) pragma exception init		--associate an exception number with user defined exception type
+
+WHAT IS PRAGMA EXCEPTION INIT?
+-------------------------------
+	We can associate user defined exception types to an exception number	 (predefined or user defined)
+
+
+DECLARE
+    X INT;
+    eid int:=99;
+    MY_ERROR EXCEPTION;
+    PRAGMA EXCEPTION_INIT (MY_ERROR, -1422);
+BEGIN
+    SELECT SALARY INTO X FROM EMPLOYEES where employee_id=100;
+    raise MY_ERROR;	--I RAISED ERROR
+    dbms_output.put_line('hi this is the last line');
+EXCEPTION
+    WHEN MY_ERROR THEN
+        DBMS_OUTPUT.PUT_LINE('IT IS MY ERROR');
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('There is no such employee with id #'||eid);
+END;
+
+
+
+
+-----------
+
+WE CAN DEFINE USER DEFINED EXCEPTION IN 
+	PRAGMA EXCEPTION INIT
+
+	-20999 to 20000
+
+declare
+    MY_NEW_ERROR exception;
+    PRAGMA EXCEPTION_INIT (MY_NEW_ERROR, -20001);
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('HI');
+    RAISE_APPLICATION_ERROR(-20001, 'Account past due.');
+    DBMS_OUTPUT.PUT_LINE('end');
+EXCEPTION
+    WHEN MY_NEW_ERROR THEN
+        DBMS_OUTPUT.PUT_LINE('EXCEPTION IS HANDLED');
+END;
+
+-----------------------------
+Activity:
+---------
+Identify the exception types in plsql
+
+	TOO_MANY_ROWS
+	NO_DATA_FOUND
+	ZERO_DIVIDE
+
+declare
+    MY_NEW_ERROR exception;
+    PRAGMA EXCEPTION_INIT (MY_NEW_ERROR, -20001);
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('HI');
+    RAISE_APPLICATION_ERROR(-20001, 'Account past due.');
+    
+    DBMS_OUTPUT.PUT_LINE('end');
+EXCEPTION
+    WHEN MY_NEW_ERROR THEN
+        DBMS_OUTPUT.PUT_LINE('EXCEPTION IS HANDLED');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('SOME OTHER ERROR');
+END;
+
+-------------------
+Task1:
+	input 2 numbers from the user.
+	divide the first number by second number.
+	expect a "ZERO_DIVIDE" and handle it
+Task2:
+	define a new exception name for that ZERO_DIVIDE using pragma exception init and handle user defined exception
+
+==========================================================
+PROCEDURES
+-------------
+x=sum(a,b);		//what is sum?	sum is a function, because, it returns a value/ref
+
+Procedure does not have return statement. But can return 0 or more values (using output parameters)
+
+scanf("%d",&a);			a is an output paramter
+	usually, the paramters (arguments) are used to supply input to the proc.
+	but here, the proc is filling the output in argument (a)
+printf("%d",a);		a is input to the procedure
+
+
+
+sum(a,b);		a and b are input to sum 
+swap(&a,&b);		a and b are in and out parameters
+
+java:
+	method that returns value, but it is not compulsory to capture that value
+
+CREATE OR REPLACE PROCEDURE PRCJAG1
+AS
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('HELLO WORLD');
+END;
+
+
+BEGIN
+    PRCJAG1;
+END;
+
+
+How to find if the procedure is created or not?
+	SELECT * FROM USER_PROCEDURES;
+---------------------
+tASK:
+	create a procedure "prcsum" THAT accepts 2 parameters and display output.
+	Hint:	use + operator to add
+
+CREATE OR REPLACE PROCEDURE PRCSUM(NO1 INT, NO2 INT)
+AS
+TOTAL INT;
+BEGIN
+    TOTAL:=NO1+NO2;
+    DBMS_OUTPUT.PUT_LINE('The sum of '||NO1||' and '||NO2||' is '||TOTAL);
+END;
+
+BEGIN
+    PRCSUM(12,3);
+END;
+--------------------------------------------
+Instead of displaying the output in the procedure, the procedure should return the output as an output parameter
+--------------------------
+
+CREATE OR REPLACE PROCEDURE PRCSUM(NO1 INT, NO2 INT, RESULT OUT INT)
+AS
+BEGIN
+    RESULT:=NO1+NO2;
+END;
+
+DECLARE 
+    X INT;
+BEGIN
+    PRCSUM(121,131,X);
+    DBMS_OUTPUT.PUT_LINE(X);
+END;
+-------------------------------
+
+Task:
+-----
+	accept 2 number inputs, and 1 char input and 1 output integer, 
+	char input should be + or - or * or /
+	based on the char input, the operation should be performed and output should be filled in output parameter
+
+	test the procedure using a plsql program.
+
+
+    CASE 
+    WHEN OP='+' THEN RES:=NO1+NO2;
+    WHEN OP='-' THEN RES:=NO1-NO2;
+    WHEN OP='*' THEN RES:=NO1*NO2;
+    WHEN OP='/' THEN RES:=NO1/NO2;
+    END CASE;
+
+    CASE OP
+    WHEN '+' THEN RES:=NO1+NO2;
+    WHEN '-' THEN RES:=NO1-NO2;
+    WHEN '*' THEN RES:=NO1*NO2;
+    WHEN '/' THEN RES:=NO1/NO2;
+    END CASE;
+
+CREATE OR REPLACE PROCEDURE PRCSUM2
+(NO1 INT, NO2 INT, OP CHAR, RES OUT NUMBER)
+AS
+BEGIN
+    CASE OP
+    WHEN '+' THEN RES:=NO1+NO2;
+    WHEN '-' THEN RES:=NO1-NO2;
+    WHEN '*' THEN RES:=NO1*NO2;
+    WHEN '/' THEN RES:=NO1/NO2;
+    END CASE;
+END;
+
+DECLARE
+    RESULT NUMBER(10,2);
+BEGIN
+    PRCSUM2(20,3,'/',RESULT);
+    DBMS_OUTPUT.PUT_LINE(RESULT);
+END;
+-------------
+CREATE A PROCEDURE THAT ACCEPTS EID AS PARAMETER AND RETURN THE EMPLOYEE ROW AS OUPUT
+
+CREATE OR REPLACE PROCEDURE PRCEMP1
+(EID IN INT, EMPLOYEE OUT EMPLOYEES%ROWTYPE)
+AS
+BEGIN
+    SELECT * INTO EMPLOYEE FROM EMPLOYEES WHERE EMPLOYEE_ID=EID;
+EXCEPTION
+    WHEN OTHERS THEN
+    SELECT * INTO EMPLOYEE FROM EMPLOYEES WHERE EMPLOYEE_ID=100;
+END;
+
+DECLARE
+    EMP EMPLOYEES%ROWTYPE;
+BEGIN
+    PRCEMP1(207,EMP);
+    DBMS_OUTPUT.PUT_LINE(EMP.EMPLOYEE_ID);
+    DBMS_OUTPUT.PUT_LINE(EMP.FIRST_NAME);
+    DBMS_OUTPUT.PUT_LINE(EMP.LAST_NAME);
+    
+END;
+-------------------
+VARRAY
+------
+1) If we create a varray in a plsql program. Then it is useful only inside that program
+	TYPE earr 
+2) If we create a varray as a database object, then it is useful in any program in that schema
+	CREATE OR REPLACE TYPE earr
+DECLARE
+    TYPE ARR IS VARRAY(3) OF INT;
+    X ARR;
+BEGIN
+    X:=ARR(1,2,3);
+    FOR I IN 1..X.COUNT
+    LOOP
+        DBMS_OUTPUT.PUT_LINE(X(I));
+    END LOOP;
+END;
+--------------------
+DECLARE
+    TYPE ARR IS VARRAY(100) OF INT;
+    X ARR:=ARR();
+BEGIN
+    X.EXTEND;
+    X(1):=90;
+    X.EXTEND;
+    X(2):=70;
+    X.EXTEND;
+    X(3):=80;
+    X.EXTEND;
+    
+    FOR I IN 1..X.COUNT
+    LOOP
+        DBMS_OUTPUT.PUT_LINE(X(I));
+    END LOOP;
+END;
+
+---------------------------
+Task:
+-----
+	create a procedure that accepts the branch id as argument and find all the customers who has account in that branch.
+	the details required is "all" columns of customer table.
+	return all the records using OUT parameter
+
+Note:
+	the varray size can be made 100 default. but in receiving end, we need to know the count of customer found
+	so 1 more out parameter that contains the result found count.
